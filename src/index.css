@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --green: #2D6A4F;
+  --green-light: #52B788;
+  --yellow: #E9C46A;
+  --red: #E76F51;
+  --gray: #ADB5BD;
+  --bg: #FAFAF8;
+  --card: #FFFFFF;
+  --text: #1A1A2E;
+  --text-muted: #6B7280;
+  --border: #E5E7EB;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body, #root {
+  height: 100%;
+  background: var(--bg);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 17px;
+  color: var(--text);
+  overscroll-behavior: none;
+}
+
+body { margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 16px); }
+.safe-top { padding-top: env(safe-area-inset-top, 0px); }
+
+/* Make scrollable content not overlap the bottom nav */
+.page-content {
+  min-height: 100vh;
+  padding-bottom: 90px;
+}
+
+/* Big tap targets */
+button { min-height: 48px; cursor: pointer; }
+
+/* Smooth transitions */
+.transition-fast { transition: all 0.15s ease; }
+
+/* Custom scrollbar hidden on mobile */
+::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; }
