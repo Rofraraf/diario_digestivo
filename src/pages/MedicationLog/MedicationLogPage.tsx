@@ -196,11 +196,11 @@ export default function MedicationLogPage({ onNavigate: _onNavigate }: Props) {
   useEffect(() => { loadData() }, [])
 
   async function loadData() {
-    const [defs, ch] = await Promise.all([
-      db.medicationDefs.where('hidden').equals(0).toArray(),
+    const [allDefs, ch] = await Promise.all([
+      db.medicationDefs.toArray(),
       getOrCreateMedCheck(today()),
     ])
-    setMeds(defs.filter(m => !m.hidden))
+    setMeds(allDefs.filter(m => !m.hidden))
     setCheck(ch)
   }
 
@@ -212,7 +212,13 @@ export default function MedicationLogPage({ onNavigate: _onNavigate }: Props) {
     const nuevo = { ...check.checks, [key]: !check.checks[key] }
     const updated = { ...check, checks: nuevo }
     setCheck(updated)
-    await db.medChecks.put(updated)
+    // Siempre pasar id para que Dexie actualice en lugar de insertar
+    if (updated.id) {
+      await db.medChecks.update(updated.id, { checks: nuevo })
+    } else {
+      const id = await db.medChecks.put(updated)
+      setCheck({ ...updated, id })
+    }
 
     // También registra en medications para el historial
     if (!check.checks[key]) {

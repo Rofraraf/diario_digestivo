@@ -26,8 +26,8 @@ export default function SymptomLogPage({ onNavigate }: SymptomLogPageProps) {
   }, [])
 
   async function loadSymptoms() {
-    const defs = await db.symptomDefs.where('hidden').equals(0).toArray()
-    setSymptomDefs(defs.sort((a, b) => b.useCount - a.useCount))
+    const all = await db.symptomDefs.toArray()
+    setSymptomDefs(all.filter(d => !d.hidden).sort((a, b) => b.useCount - a.useCount))
   }
 
   function toggleSymptom(id: number) {

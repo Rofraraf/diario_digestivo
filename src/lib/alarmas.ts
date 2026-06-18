@@ -69,7 +69,8 @@ export async function comprobarTomasPendientes() {
   const { db } = await import('../db')
   const check = await db.medChecks.where('date').equals(today).first()
   const checks = check?.checks || {}
-  const meds = await db.medicationDefs.where('hidden').equals(0).toArray()
+  const allMeds = await db.medicationDefs.toArray()
+  const meds = allMeds.filter(m => !m.hidden)
 
   for (const alarma of alarmasActivas) {
     const base = TOMA_HORAS[alarma.tomaId]

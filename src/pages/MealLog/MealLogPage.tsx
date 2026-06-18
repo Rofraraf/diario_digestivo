@@ -57,16 +57,18 @@ export default function MealLogPage({ onNavigate, params }: MealLogPageProps) {
 
   async function loadCatalog() {
     const [f, c] = await Promise.all([
-      db.foods.where('hidden').equals(0).sortBy('useCount'),
-      db.condiments.where('hidden').equals(0).sortBy('useCount'),
+      db.foods.toArray(),
+      db.condiments.toArray(),
     ])
+    const visibleFoods = f.filter(x => !x.hidden)
+    const visibleConds = c.filter(x => !x.hidden)
     // Sort: favorites first, then by useCount desc
-    const sortedFoods = [...f].sort((a, b) => {
+    const sortedFoods = visibleFoods.sort((a, b) => {
       if (a.favorite && !b.favorite) return -1
       if (!a.favorite && b.favorite) return 1
       return b.useCount - a.useCount
     })
-    const sortedCondiments = [...c].sort((a, b) => {
+    const sortedCondiments = visibleConds.sort((a, b) => {
       if (a.favorite && !b.favorite) return -1
       if (!a.favorite && b.favorite) return 1
       return b.useCount - a.useCount
