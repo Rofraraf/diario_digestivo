@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useLiveQuery } from 'dexie-react-hooks'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Utensils, Thermometer, Wind, Pill, ChevronRight, RefreshCw, Star } from 'lucide-react'
@@ -16,34 +17,37 @@ interface TodayPageProps {
 
 export default function TodayPage({ onNavigate }: TodayPageProps) {
   const today = format(new Date(), 'yyyy-MM-dd')
-  const [meals, setMeals] = useState<MealEntry[]>([])
-  const [symptoms, setSymptoms] = useState<SymptomEntry[]>([])
-  const [bathroom, setBathroom] = useState<BathroomEntry[]>([])
-  const [medDefs, setMedDefs] = useState<MedicationDef[]>([])
-  const [medChecks, setMedChecks] = useState<Record<string, boolean>>({})
-  const [factors, setFactors] = useState<DailyFactors | null>(null)
   const [showFactors, setShowFactors] = useState(false)
 
   useEffect(() => {
-    loadData()
-  }, [])
+    getOrCreateMedCheck(today)
+    getOrCreateFactors(today)
+  }, [today])
 
-  async function loadData() {
-    const [m, s, b, defs, check, f] = await Promise.all([
-      db.meals.where('date').equals(today).toArray(),
-      db.symptoms.where('date').equals(today).toArray(),
-      db.bathroom.where('date').equals(today).toArray(),
-      db.medicationDefs.toArray(),
-      getOrCreateMedCheck(today),
-      getOrCreateFactors(today),
-    ])
-    setMeals(m)
-    setSymptoms(s)
-    setBathroom(b)
-    setMedDefs(defs.filter(d => !d.hidden))
-    setMedChecks(check.checks || {})
-    setFactors(f)
-  }
+  const meals = useLiveQuery(
+    () => db.meals.where('date').equals(today).toArray(),
+    [today], []
+  ) as MealEntry[]
+  const symptoms = useLiveQuery(
+    () => db.symptoms.where('date').equals(today).toArray(),
+    [today], []
+  ) as SymptomEntry[]
+  const bathroom = useLiveQuery(
+    () => db.bathroom.where('date').equals(today).toArray(),
+    [today], []
+  ) as BathroomEntry[]
+  const medDefs = (useLiveQuery(
+    () => db.medicationDefs.toArray(),
+    [], []
+  ) as MedicationDef[]).filter(d => !d.hidden)
+  const medChecks = useLiveQuery(
+    () => db.medChecks.where('date').equals(today).first(),
+    [today]
+  )?.checks || {}
+  const factors = useLiveQuery(
+    () => db.dailyFactors.where('date').equals(today).first(),
+    [today]
+  ) ?? null
 
   // Calcula total de tomas configuradas y cuántas están marcadas hoy
   const totalTomas = medDefs.reduce((acc, med) => acc + (med.tomas?.length ?? 0), 0)
@@ -61,7 +65,6 @@ export default function TodayPage({ onNavigate }: TodayPageProps) {
   }
 
   async function saveFactors(updated: DailyFactors) {
-    setFactors(updated)
     if (updated.id) {
       await db.dailyFactors.put(updated)
     }
