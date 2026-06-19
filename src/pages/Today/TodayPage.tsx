@@ -2,10 +2,13 @@ import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Utensils, Thermometer, Wind, Pill, ChevronRight, RefreshCw, Star } from 'lucide-react'
-import { db, computeDayColor, getOrCreateFactors } from '../../db'
+import { db, computeDayColor, getOrCreateFactors, getOrCreateMedCheck } from '../../db'
 import { Card, DayBadge, BigButton, SelectRow, TextArea } from '../../components/UI'
-import type { MealEntry, SymptomEntry, BathroomEntry, MedicationEntry, DailyFactors } from '../../types'
+import type { MealEntry, SymptomEntry, BathroomEntry, DailyFactors } from '../../types'
+import type { MedicationDef, TomaId } from '../../types/medication'
 import { MEAL_TYPE_LABELS } from '../../constants/catalogs'
+
+const TOMA_IDS: TomaId[] = ['manana', 'mediodia', 'noche', 'extra']
 
 interface TodayPageProps {
   onNavigate: (page: string, params?: Record<string, unknown>) => void
@@ -16,7 +19,8 @@ export default function TodayPage({ onNavigate }: TodayPageProps) {
   const [meals, setMeals] = useState<MealEntry[]>([])
   const [symptoms, setSymptoms] = useState<SymptomEntry[]>([])
   const [bathroom, setBathroom] = useState<BathroomEntry[]>([])
-  const [medications, setMedications] = useState<MedicationEntry[]>([])
+  const [medDefs, setMedDefs] = useState<MedicationDef[]>([])
+  const [medChecks, setMedChecks] = useState<Record<string, boolean>>({})
   const [factors, setFactors] = useState<DailyFactors | null>(null)
   const [showFactors, setShowFactors] = useState(false)
 
@@ -25,19 +29,27 @@ export default function TodayPage({ onNavigate }: TodayPageProps) {
   }, [])
 
   async function loadData() {
-    const [m, s, b, med] = await Promise.all([
+    const [m, s, b, defs, check, f] = await Promise.all([
       db.meals.where('date').equals(today).toArray(),
       db.symptoms.where('date').equals(today).toArray(),
       db.bathroom.where('date').equals(today).toArray(),
-      db.medications.where('date').equals(today).toArray(),
+      db.medicationDefs.toArray(),
+      getOrCreateMedCheck(today),
+      getOrCreateFactors(today),
     ])
     setMeals(m)
     setSymptoms(s)
     setBathroom(b)
-    setMedications(med)
-    const f = await getOrCreateFactors(today)
+    setMedDefs(defs.filter(d => !d.hidden))
+    setMedChecks(check.checks || {})
     setFactors(f)
   }
+
+  // Calcula total de tomas configuradas y cuántas están marcadas hoy
+  const totalTomas = medDefs.reduce((acc, med) => acc + (med.tomas?.length ?? 0), 0)
+  const tomasTomadas = medDefs.reduce((acc, med) =>
+    acc + TOMA_IDS.filter(t => med.tomas?.includes(t) && medChecks[`${med.id}_${t}`]).length, 0
+  )
 
   const dayColor = computeDayColor(symptoms)
 
@@ -99,10 +111,10 @@ export default function TodayPage({ onNavigate }: TodayPageProps) {
         <SummaryCard
           icon={<Pill size={20} />}
           label="Medicación"
-          count={medications.length}
-          color={medications.length > 0 ? 'green' : 'gray'}
-          detail={medications.length > 0 ? medications.map(m => m.medicationName).slice(0, 2).join(', ') : 'Sin registros'}
-          borderClass={medications.length > 0 ? colorBorders.green : ''}
+          count={tomasTomadas}
+          color={totalTomas === 0 ? 'gray' : tomasTomadas === totalTomas ? 'green' : tomasTomadas > 0 ? 'yellow' : 'gray'}
+          detail={totalTomas === 0 ? 'Sin configurar' : `${tomasTomadas}/${totalTomas} tomas de hoy`}
+          borderClass={tomasTomadas > 0 ? (tomasTomadas === totalTomas ? colorBorders.green : colorBorders.yellow) : ''}
         />
       </div>
 

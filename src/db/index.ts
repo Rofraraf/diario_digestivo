@@ -59,15 +59,16 @@ export class DiarioDigestivoDB extends Dexie {
 export const db = new DiarioDigestivoDB()
 
 export async function seedIfEmpty() {
-  const foodCount = await db.foods.count()
-  if (foodCount === 0) {
+  await db.transaction('rw', [db.foods, db.condiments, db.symptomDefs, db.medicationDefs], async () => {
+    const foodCount = await db.foods.count()
+    if (foodCount > 0) return
     await db.foods.bulkAdd(INITIAL_FOODS as FoodItem[])
     await db.condiments.bulkAdd(INITIAL_CONDIMENTS as Condiment[])
     await db.symptomDefs.bulkAdd(INITIAL_SYMPTOMS as SymptomDef[])
     await db.medicationDefs.bulkAdd(
       (INITIAL_MEDICATIONS as Omit<MedicationDef, 'id'>[]).map(m => ({ ...m, tomas: ['manana'] as import('../types/medication').TomaId[] }))
     )
-  }
+  })
 }
 
 export async function getOrCreateFactors(date: string): Promise<DailyFactors> {

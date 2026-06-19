@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { format } from 'date-fns'
 import { Check, Plus, Search, X, Edit2, Trash2 } from 'lucide-react'
 import { db, getOrCreateMedCheck } from '../../db'
 import { BigButton, Card, Label, Modal, TextInput } from '../../components/UI'
@@ -15,7 +16,7 @@ const TOMAS: { id: TomaId; label: string; icon: string; hora: string }[] = [
   { id: 'extra',    label: 'Si precisa',icon: '⚡',  hora: ''      },
 ]
 
-const today = () => new Date().toISOString().slice(0, 10)
+const today = () => format(new Date(), 'yyyy-MM-dd')
 
 // ─── Búsqueda CIMA via Worker proxy ──────────────────────────────────────────
 interface CIMAResult {
@@ -185,7 +186,7 @@ function ModalMedicamento({
 }
 
 // ─── Página principal ─────────────────────────────────────────────────────────
-export default function MedicationLogPage({ onNavigate: _onNavigate }: Props) {
+export default function MedicationLogPage({ onNavigate }: Props) {
   const [view, setView] = useState<'pauta' | 'config'>('pauta')
   const [meds, setMeds] = useState<MedicationDef[]>([])
   const [check, setCheck] = useState<DailyMedCheck>({ date: today(), checks: {} })
@@ -345,9 +346,18 @@ export default function MedicationLogPage({ onNavigate: _onNavigate }: Props) {
                   />
                 </div>
                 {pct === 100 && (
-                  <p className="text-[13px] text-[#2D6A4F] font-semibold mt-2 text-center">
-                    ✓ Toda la medicación tomada hoy 🎉
-                  </p>
+                  <div className="mt-3">
+                    <p className="text-[13px] text-[#2D6A4F] font-semibold text-center mb-2">
+                      ✓ Toda la medicación tomada hoy 🎉
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => onNavigate('today')}
+                      className="w-full text-center text-[14px] text-[#2D6A4F] font-semibold py-2"
+                    >
+                      Volver al inicio →
+                    </button>
+                  </div>
                 )}
               </Card>
 

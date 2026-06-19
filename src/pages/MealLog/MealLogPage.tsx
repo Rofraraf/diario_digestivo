@@ -269,6 +269,11 @@ export default function MealLogPage({ onNavigate, params }: MealLogPageProps) {
 
           {/* Food grid */}
           <div className="grid grid-cols-2 gap-2 mb-4">
+            {categoryFoods.length === 0 && (
+              <div className="col-span-2 py-6 text-center text-[14px] text-[#9CA3AF]">
+                No hay alimentos en esta categoría
+              </div>
+            )}
             {categoryFoods.map(food => {
               const isSelected = selectedItems.some(i => i.foodId === food.id)
               return (
@@ -333,6 +338,13 @@ export default function MealLogPage({ onNavigate, params }: MealLogPageProps) {
             disabled={selectedItems.length === 0}
           >
             Continuar → Condimentos
+          </BigButton>
+          <BigButton
+            variant="ghost"
+            onClick={saveMeal}
+            disabled={selectedItems.length === 0 || saving}
+          >
+            Guardar sin condimentos
           </BigButton>
         </>
       )}
